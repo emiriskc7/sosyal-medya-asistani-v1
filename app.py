@@ -655,6 +655,15 @@ def reset_app_state():
 
 # Sayfa yapılandırması
 st.set_page_config(page_title="Viral Sosyal Medya Stratejisti", layout="wide")
+
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;} /* İstersen sağ üstteki hamburger menüyü de gizler */
+    footer {visibility: hidden;} /* En alttaki Hosted with Streamlit yazısını gizler */
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 apply_mobile_first_styles()
 
 

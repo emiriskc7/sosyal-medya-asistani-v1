@@ -658,18 +658,15 @@ st.set_page_config(page_title="Viral Sosyal Medya Stratejisti", layout="wide")
 
 hide_streamlit_style = """
     <style>
-    /* Sağ üstteki standart Streamlit menüsünü gizler */
+    /* Sadece sağ üstteki 3 noktalı Streamlit menüsünü gizler, hamburger menüyü KORUR */
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-
-    /* En alttaki Hosted with Streamlit footer alanını tamamen kaldırır */
+    [data-testid="stToolbar"] {visibility: hidden;} 
+    
+    /* En alttaki Hosted with Streamlit footer alanını gizler */
     footer {visibility: hidden;}
-    stDecoration {display:none !important;}
-
-    /* Yeni Streamlit sürümleri için alternatif gizleme kuralları */
-    .stAppDeployButton {display:none !important;} /* Eğer varsa Deploy butonunu gizler */
-    [data-testid="stHeader"] {display: none !important;}
-    [data-testid="stFooter"] {display: none !important;}
+    
+    /* Varsa Deploy butonunu gizler */
+    .stAppDeployButton {display:none !important;} 
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)

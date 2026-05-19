@@ -819,6 +819,30 @@ elif page == "✨ İçerik Stüdyosu":
                 "- Loop hissi yaratacak, enerjisi yüksek bir kapanış tasarla.\n"
                 "- Uzun paragraf ve akademik anlatım KESİNLİKLE YASAKTIR."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN
+══════════════════════════════════════════
+🔥 [0-3 Sn — Kanca (Hook)]: (İzleyiciyi anında kilitleyen açılış — buraya yaz)
+
+⚡ [3-8 Sn — Giriş / Kurulum]: (Konunun hızlı ve net kurulumu — buraya yaz)
+
+🎬 [8-{sure} Sn — Görsel / Video Akışı]:
+  - Sahne 1 (X-X sn): (Ne görüyoruz, kamera açısı, hareket — buraya yaz)
+  - Sahne 2 (X-X sn): (Ne görüyoruz, kamera açısı, hareket — buraya yaz)
+  - Sahne 3 (X-X sn): (Ne görüyoruz, kamera açısı, hareket — buraya yaz)
+
+🗣️ [Seslendirme / Voiceover Metni]: (Söylenecek tam metin — buraya yaz)
+
+📱 [On-Screen Text / Ekran Yazısı]: (Ekranda flash gösterilecek yazılar — buraya yaz)
+
+🚀 [Kapanış + CTA]: (Loop hissi yaratacak kapanış ve harekete geçirici mesaj — buraya yaz)
+
+🛠️ [Üretim Araçları]: (CapCut, ElevenLabs, Runway vb. öneriler — buraya yaz)
+
+🎨 [AI Görsel/Video Promptu]: (Her sahne için ayrı Türkçe prompt — buraya yaz)
+══════════════════════════════════════════"""
+
         elif any(k in platform_lower for k in ("hikaye", "story")):
             platform_kurali = (
                 "INSTAGRAM HİKAYE (Story) KURALI — KESİNLİKLE UYGULA:\n"
@@ -829,6 +853,28 @@ elif page == "✨ İçerik Stüdyosu":
                 "  3. Slayt üzerine yazılacak maksimum 2 cümle\n"
                 "- Detaylı paragraf ve uzun metin KESİNLİKLE YASAKTIR."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN (UZUN METİN YASAK)
+══════════════════════════════════════════
+📱 Slayt 1:
+  🖼️ Görsel Fikri   : (Ne gösterilecek — buraya yaz)
+  ✍️ Ekran Metni    : (Max 2 cümle — buraya yaz)
+  🎯 Etkileşim      : (Anket / Soru Kutusu / Emoji Slider — hangisi uygunsa yaz)
+
+📱 Slayt 2:
+  🖼️ Görsel Fikri   : (Ne gösterilecek — buraya yaz)
+  ✍️ Ekran Metni    : (Max 2 cümle — buraya yaz)
+  🎯 Etkileşim      : (Anket / Soru Kutusu / Link — hangisi uygunsa yaz)
+
+📱 Slayt 3:
+  🖼️ Görsel Fikri   : (Ne gösterilecek — buraya yaz)
+  ✍️ Ekran Metni    : (Max 2 cümle — buraya yaz)
+  🎯 Etkileşim      : (Link / CTA Butonu — buraya yaz)
+
+🎨 [AI Görsel Promptları]: (Her slayt için ayrı Türkçe, 9:16 dikey format — buraya yaz)
+══════════════════════════════════════════"""
+
         elif "youtube" in platform_lower and "uzun" in platform_lower:
             platform_kurali = (
                 f"YOUTUBE UZUN VİDEO KURALI — KESİNLİKLE UYGULA (Süre: {sure_uzunluk}):\n"
@@ -837,6 +883,27 @@ elif page == "✨ İçerik Stüdyosu":
                 f"- Süre tercihi '{sure_uzunluk}' olduğu için bölüm sayısını ve detay düzeyini buna göre ayarla.\n"
                 "- Her bölüm için zaman damgası (00:00, 02:30 vb.) ekle."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN
+══════════════════════════════════════════
+🎣 [Giriş / Hook — 00:00-00:15]: (İzleyiciyi tutacak çarpıcı açılış — buraya yaz)
+
+👋 [İntro — 00:15-01:00]: (Kanal/konuşmacı tanıtımı ve videonun vaadi — buraya yaz)
+
+⏱️ [Bölüm 1 — 01:00-0X:XX]: (Başlık ve içerik özeti — buraya yaz)
+
+⏱️ [Bölüm 2 — 0X:XX-0X:XX]: (Başlık ve içerik özeti — buraya yaz)
+
+⏱️ [Bölüm 3 — 0X:XX-0X:XX]: (Başlık ve içerik özeti — buraya yaz)
+
+🚀 [Kapanış + CTA — Son 1 dk]: (Abone ol / beğen / yorum yap çağrısı — buraya yaz)
+
+🛠️ [Üretim Araçları]: (Premiere, DaVinci, ElevenLabs vb. öneriler — buraya yaz)
+
+🎨 [Thumbnail + AI Video Promptları]: (Sahne bazlı Türkçe promptlar — buraya yaz)
+══════════════════════════════════════════"""
+
         elif "linkedin" in platform_lower:
             platform_kurali = (
                 "LİNKEDIN KURALI — KESİNLİKLE UYGULA:\n"
@@ -846,6 +913,23 @@ elif page == "✨ İçerik Stüdyosu":
                 "- Metnin sonuna 3-5 adet sektörel hashtag ekle.\n"
                 "- Kuru, listeli veya madde madde format KESİNLİKLE YASAKTIR."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN
+══════════════════════════════════════════
+[Çarpıcı Açılış Cümlesi — merak uyandırıcı, tek satır]
+
+[Hikaye / Problem Paragrafı — 2-4 cümle, samimi anlatım]
+
+[Gelişme / Değer Katan İçerik Paragrafı — 2-4 cümle]
+
+[Sonuç / İçgörü / Ders Paragrafı — 2-3 cümle]
+
+[Soru veya Harekete Geçirici Mesaj (CTA) — tek satır]
+
+#Hashtag1 #Hashtag2 #Hashtag3 #Hashtag4 #Hashtag5
+══════════════════════════════════════════"""
+
         elif any(k in platform_lower for k in ("twitter", "/x", "flood")):
             platform_kurali = (
                 "TWITTER/X THREAD KURALI — KESİNLİKLE UYGULA:\n"
@@ -855,6 +939,21 @@ elif page == "✨ İçerik Stüdyosu":
                 "- Son tweete güçlü bir CTA (eylem çağrısı) veya özet ekle.\n"
                 "- 280 karakteri aşan tek tweet üretmek KESİNLİKLE YASAKTIR."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN (her tweet max 280 karakter)
+══════════════════════════════════════════
+Tweet 1/X: [En vurucu, dikkat çekici açılış cümlesi — max 280 karakter]
+
+Tweet 2/X: [Gelişme / ilk bilgi — max 280 karakter]
+
+Tweet 3/X: [Gelişme / ikinci bilgi — max 280 karakter]
+
+Tweet 4/X: [Gelişme / üçüncü bilgi — max 280 karakter]
+
+Tweet X/X: [Kapanış + güçlü CTA (beğen, retweet, yorum yap) — max 280 karakter]
+══════════════════════════════════════════"""
+
         elif any(k in platform_lower for k in ("kaydırmalı", "carousel", "post")):
             platform_kurali = (
                 "INSTAGRAM CAROUSEL/POST KURALI — KESİNLİKLE UYGULA:\n"
@@ -863,12 +962,32 @@ elif page == "✨ İçerik Stüdyosu":
                 "- Caption (açıklama metni) CTA içerecek şekilde ayrıca yaz.\n"
                 "- Metnin sonuna 5-10 ilgili hashtag ekle."
             )
+            cikis_sablonu = """
+══════════════════════════════════════════
+ZORUNLU ÇIKTI ŞABLONU — SADECE BU FORMATI KULLAN
+══════════════════════════════════════════
+🖼️ [Kapak Slaytı Başlığı]: (Görselin üzerinde yazacak vurucu metin — buraya yaz)
+
+📄 Slayt 1: [Görsel Fikri] — [Üzerindeki Metin]
+📄 Slayt 2: [Görsel Fikri] — [Üzerindeki Metin]
+📄 Slayt 3: [Görsel Fikri] — [Üzerindeki Metin]
+📄 Slayt 4: [Görsel Fikri] — [Üzerindeki Metin]
+📄 Son Slayt: [CTA Görseli] — [Harekete Geçirici Mesaj]
+
+📝 [Caption / Açıklama Metni]: (Okunabilir, CTA içeren tam metin — buraya yaz)
+
+#hashtag1 #hashtag2 #hashtag3 #hashtag4 #hashtag5
+
+🎨 [AI Görsel Promptları]: (Her slayt için ayrı Türkçe prompt — buraya yaz)
+══════════════════════════════════════════"""
+
         else:
             platform_kurali = (
                 f"'{platform}' PLATFORMA ÖZEL KURAL — KESİNLİKLE UYGULA:\n"
                 "- Seçilen platformun tüketim alışkanlıklarına ve algoritma dinamiklerine uygun içerik üret.\n"
                 "- Yüksek etkileşim ve kaydetme/paylaşma oranı hedefle."
             )
+            cikis_sablonu = ""
 
         prompt = f"""
 ⚠️⚠️ ZORUNLU PLATFORM TALİMATLARI — BU KURALLARA %100 İTAAT ETMELİSİN ⚠️⚠️
@@ -896,6 +1015,8 @@ Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
 {get_algorithm_hacks_prompt(platform)}
 
 {get_platform_specific_prompt(platform)}
+
+{cikis_sablonu}
         """
 
         try:

@@ -738,6 +738,13 @@ icerik_tonu = st.session_state.icerik_tonu
 viral_strateji = st.session_state.viral_strateji
 sure_uzunluk = st.session_state.sure_uzunluk
 
+# sure_uzunluk'un mevcut platform için geçerli olduğunu doğrula;
+# platform değiştiğinde eski format değeri sessizce geçersiz kalabilir.
+_, _gecerli_sure_secenekleri = get_duration_field_config(platform)
+if sure_uzunluk not in _gecerli_sure_secenekleri:
+    sure_uzunluk = _gecerli_sure_secenekleri[0]
+    st.session_state.sure_uzunluk = sure_uzunluk
+
 if page == "⚙️ Ayarlar":
     st.title("⚙️ Ayarlar")
     st.caption("Platform, strateji ve API yapılandırmasını buradan yönetebilirsiniz.")
@@ -787,6 +794,15 @@ if page == "⚙️ Ayarlar":
 elif page == "✨ İçerik Stüdyosu":
     st.title("✨ İçerik Stüdyosu")
     st.caption("Fikrinizi yazın, profesyonel içerik akışını tek tıkla üretin.")
+
+    st.info(
+        f"📌 **Aktif Ayarlar** → "
+        f"🌐 {st.session_state.platform} · "
+        f"⏱️ {st.session_state.sure_uzunluk} · "
+        f"🎯 {st.session_state.hedef_kitle} · "
+        f"🎭 {st.session_state.icerik_tonu}\n\n"
+        "_Değiştirmek için kenar menüden ⚙️ **Ayarlar** sekmesine gidin._"
+    )
 
     if st.session_state.viral_topic:
         st.session_state.konu_input = st.session_state.viral_topic

@@ -662,6 +662,9 @@ def reset_app_state():
     st.session_state.icerik_tonu = ICERIK_TONU_OPTIONS[0]
     st.session_state.viral_strateji = VIRAL_STRATEJI_OPTIONS[0]
     st.session_state.konu_input = ""
+    st.session_state["kalici_platform"] = PLATFORM_OPTIONS[0]
+    _, _kf_reset = get_duration_field_config(PLATFORM_OPTIONS[0])
+    st.session_state["kalici_format"] = _kf_reset[0]
 
 
 # Sayfa yapılandırması
@@ -693,6 +696,11 @@ if "viral_topic" not in st.session_state:
     st.session_state.viral_topic = ""
 if "trend_radar_items" not in st.session_state:
     st.session_state.trend_radar_items = []
+if "kalici_platform" not in st.session_state:
+    st.session_state["kalici_platform"] = PLATFORM_OPTIONS[0]
+if "kalici_format" not in st.session_state:
+    _, _kf_opts = get_duration_field_config(PLATFORM_OPTIONS[0])
+    st.session_state["kalici_format"] = _kf_opts[0]
 
 
 st.sidebar.title("🚀 AI Tabanlı İçerik Stüdyosu")
@@ -732,18 +740,18 @@ else:
             selected_model = "gemini-pro"
 
 api_ready = bool(active_api_key and not api_error_message and selected_model)
-platform = st.session_state.platform
-hedef_kitle = st.session_state.hedef_kitle
-icerik_tonu = st.session_state.icerik_tonu
-viral_strateji = st.session_state.viral_strateji
-sure_uzunluk = st.session_state.sure_uzunluk
+# Kalıcı gölge değişkenlerden oku — widget unmount'tan bağımsız
+platform = st.session_state["kalici_platform"]
+hedef_kitle = st.session_state.get("hedef_kitle", HEDEF_KITLE_OPTIONS[0])
+icerik_tonu = st.session_state.get("icerik_tonu", ICERIK_TONU_OPTIONS[0])
+viral_strateji = st.session_state.get("viral_strateji", VIRAL_STRATEJI_OPTIONS[0])
+sure_uzunluk = st.session_state["kalici_format"]
 
-# sure_uzunluk'un mevcut platform için geçerli olduğunu doğrula;
-# platform değiştiğinde eski format değeri sessizce geçersiz kalabilir.
+# sure_uzunluk'un mevcut platform için geçerli olduğunu doğrula
 _, _gecerli_sure_secenekleri = get_duration_field_config(platform)
 if sure_uzunluk not in _gecerli_sure_secenekleri:
     sure_uzunluk = _gecerli_sure_secenekleri[0]
-    st.session_state.sure_uzunluk = sure_uzunluk
+    st.session_state["kalici_format"] = sure_uzunluk
 
 if page == "⚙️ Ayarlar":
     st.title("⚙️ Ayarlar")
@@ -752,11 +760,15 @@ if page == "⚙️ Ayarlar":
     col_left, col_right = st.columns(2)
 
     with col_left:
-        st.selectbox("🌐 Platform", PLATFORM_OPTIONS, key="platform")
-        duration_label, duration_options = get_duration_field_config(st.session_state.platform)
-        selected_duration = st.session_state.get("sure_uzunluk")
-        duration_index = duration_options.index(selected_duration) if selected_duration in duration_options else 0
-        st.selectbox(duration_label, duration_options, index=duration_index, key="sure_uzunluk")
+        _p_idx = PLATFORM_OPTIONS.index(st.session_state["kalici_platform"]) if st.session_state["kalici_platform"] in PLATFORM_OPTIONS else 0
+        _secilen_platform = st.selectbox("🌐 Platform", PLATFORM_OPTIONS, index=_p_idx)
+        st.session_state["kalici_platform"] = _secilen_platform
+
+        duration_label, duration_options = get_duration_field_config(_secilen_platform)
+        _f_idx = duration_options.index(st.session_state["kalici_format"]) if st.session_state["kalici_format"] in duration_options else 0
+        _secilen_format = st.selectbox(duration_label, duration_options, index=_f_idx)
+        st.session_state["kalici_format"] = _secilen_format
+
         st.selectbox("🎯 Hedef Kitle", HEDEF_KITLE_OPTIONS, key="hedef_kitle")
 
     with col_right:
@@ -797,10 +809,10 @@ elif page == "✨ İçerik Stüdyosu":
 
     st.info(
         f"📌 **Aktif Ayarlar** → "
-        f"🌐 {st.session_state.platform} · "
-        f"⏱️ {st.session_state.sure_uzunluk} · "
-        f"🎯 {st.session_state.hedef_kitle} · "
-        f"🎭 {st.session_state.icerik_tonu}\n\n"
+        f"🌐 {platform} · "
+        f"⏱️ {sure_uzunluk} · "
+        f"🎯 {hedef_kitle} · "
+        f"🎭 {icerik_tonu}\n\n"
         "_Değiştirmek için kenar menüden ⚙️ **Ayarlar** sekmesine gidin._"
     )
 
@@ -824,6 +836,9 @@ elif page == "✨ İçerik Stüdyosu":
             st.warning("Lütfen bir konu girin.")
             st.stop()
 
+        # Widget unmount koruması: rerun sırasında kalıcı hafızadan doğrudan oku
+        platform = st.session_state["kalici_platform"]
+        sure_uzunluk = st.session_state["kalici_format"]
         platform_lower = platform.lower()
 
         if any(k in platform_lower for k in ("tiktok", "reels", "shorts")):

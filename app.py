@@ -205,6 +205,17 @@ def apply_mobile_first_styles():
                     padding-right: 0.85rem;
                     padding-left: 0.85rem;
                 }
+
+                /* Mobilde sütunları alt alta yığ */
+                [data-testid="stHorizontalBlock"] {
+                    flex-wrap: wrap;
+                }
+
+                [data-testid="stHorizontalBlock"] > [data-testid="stVerticalBlock"] {
+                    width: 100% !important;
+                    flex: 1 1 100% !important;
+                    min-width: 100% !important;
+                }
             }
         </style>
         """,
@@ -655,22 +666,6 @@ def reset_app_state():
 
 # Sayfa yapılandırması
 st.set_page_config(page_title="Viral Sosyal Medya Stratejisti", layout="wide")
-
-hide_streamlit_style = """
-    <style>
-    /* Sadece sağ üstteki 3 noktalı Streamlit menüsünü gizler, hamburger menüyü KORUR */
-    #MainMenu {visibility: hidden;}
-    [data-testid="stToolbar"] {visibility: hidden;} 
-    
-    /* En alttaki Hosted with Streamlit footer alanını gizler */
-    footer {visibility: hidden;}
-    
-    /* Varsa Deploy butonunu gizler */
-    .stAppDeployButton {display:none !important;} 
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
 apply_mobile_first_styles()
 
 

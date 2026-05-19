@@ -1,12 +1,66 @@
-import os
+import html as _html_lib
 import json
 import re
 import time
-from pathlib import Path
+from datetime import datetime
 
 import google.generativeai as genai
 import streamlit as st
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
+from supabase import create_client, Client
+
+GEMINI_MODEL_ADI = "gemini-3.1-flash-lite"
+
+
+@st.cache_resource
+def get_supabase_client():
+    """Supabase istemcisini Streamlit Secrets’tan oluşturur. Hata durumunda None döner."""
+    try:
+        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    except Exception:
+        return None
+
+
+_TABLO_EKSIK_KODU = "PGRST205"
+
+
+def _supabase_tablo_eksik_mi(exc: Exception) -> bool:
+    """Hatanın tablo-bulunamadı (PGRST205) kaynaklı olup olmadığını döndürür."""
+    mesaj = str(exc)
+    return _TABLO_EKSIK_KODU in mesaj or "icerik_arsivi" in mesaj and "schema cache" in mesaj
+
+
+def icerik_kaydet(platform, format_, konu, icerik_metni):
+    """Üretilen içeriği Supabase icerik_arsivi tablosuna kaydeder.
+
+    Dönüş değerleri:
+        True   – başarıyla kaydedildi
+        False  – istemci yok veya genel hata
+        None   – tablo henüz oluşturulmamış (PGRST205)
+    """
+    istemci = get_supabase_client()
+    if istemci is None:
+        st.sidebar.error("DB Hatası: Supabase istemcisi oluşturulamadı. Secrets kontrol edin.")
+        return False
+    try:
+        _yanit = istemci.table("icerik_arsivi").insert({
+            "platform": platform,
+            "format": format_,
+            "konu": konu,
+            "icerik_metni": icerik_metni,
+            "tarih": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
+        }).execute()
+        # Supabase bazı durumlarda hata detayını exception yerine yanıtın içinde döndürür
+        if hasattr(_yanit, "error") and _yanit.error:
+            st.sidebar.error(f"DB Hatası (yanıt): {_yanit.error}")
+            return False
+        return True
+    except Exception as _exc:
+        if _supabase_tablo_eksik_mi(_exc):
+            return None  # Tablo yok — çağıran uyarı gösterebilir
+        # DEBUG: hata detayını sidebar'ında göster
+        st.sidebar.error(f"DB Hatası: {type(_exc).__name__}: {_exc}")
+        return False
 
 
 def gemini_stream_chunks(response_stream):
@@ -57,41 +111,76 @@ def render_output_details(full_text, download_key, show_main_content=True):
     )
 
 
-def get_default_api_key():
-    api_key_names = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GENAI_API_KEY")
+_SLIDE_RE = re.compile(r"(📄\s*(?:Slayt\s*\d+|Son\s*Slayt)\s*:)", re.UNICODE)
 
-    for key_name in api_key_names:
-        try:
-            secret_value = st.secrets[key_name]
-        except Exception:
-            secret_value = None
 
-        if secret_value:
-            return str(secret_value).strip()
+def _render_card(marker, body):
+    """Tek bir slaytı dikey kart olarak çerçeveli biçimde çizer."""
+    safe_marker = _html_lib.escape(marker)
+    safe_body = _html_lib.escape(body).replace("\n", "<br>")
+    st.markdown(
+        f"""
+        <div style="
+            background:#1a1a2e;
+            border:1px solid #2d2d5e;
+            border-radius:12px;
+            padding:1rem 1.25rem;
+            margin:.45rem 0;
+        ">
+          <p style="font-weight:700;font-size:.95rem;color:#a78bfa;margin:0 0 .4rem 0;">
+            {safe_marker}
+          </p>
+          <p style="color:#cdd6f4;font-size:.9rem;line-height:1.65;margin:0;">
+            {safe_body}
+          </p>
+        </div>""",
+        unsafe_allow_html=True,
+    )
 
-    for key_name in api_key_names:
-        env_value = os.getenv(key_name, "").strip()
-        if env_value:
-            return env_value
 
-    env_path = Path(".env")
-    if env_path.exists():
-        try:
-            for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
+def render_slide_cards(full_text, download_key=None):
+    """
+    '📄 Slayt X:' içeren çıktıları dikey kart olarak gösterir.
+    Karusel yapısı yoksa standart markdown render yapar.
+    """
+    main_content, extra_content = split_output_sections(full_text)
 
-                key_name, value = line.split("=", 1)
-                cleaned_key = key_name.strip()
-                cleaned_value = value.strip().strip('"').strip("'")
+    if not _SLIDE_RE.search(main_content):
+        if main_content:
+            st.markdown(main_content)
+    else:
+        parts = _SLIDE_RE.split(main_content)
+        pre_slide = parts[0].strip()
+        if pre_slide:
+            st.markdown(pre_slide)
 
-                if cleaned_key in api_key_names and cleaned_value:
-                    return cleaned_value
-        except OSError:
-            return None
+        i = 1
+        while i < len(parts):
+            chunk = parts[i].strip()
+            if _SLIDE_RE.match(chunk):
+                marker = chunk
+                content = parts[i + 1].strip() if i + 1 < len(parts) else ""
+                _render_card(marker, content)
+                i += 2
+            else:
+                if chunk:
+                    st.markdown(chunk)
+                i += 1
 
-    return None
+    if extra_content:
+        with st.expander("🛠️ Araç Çantasını ve Promptları Gör"):
+            st.markdown(extra_content)
+
+    if download_key:
+        st.divider()
+        st.success("İçeriğiniz hazır. Tam çıktıyı aşağıdaki butonla indirebilirsiniz.")
+        st.download_button(
+            "📥 Bu Fikri İndir",
+            full_text,
+            file_name="icerik_fikri.txt",
+            use_container_width=True,
+            key=download_key,
+        )
 
 
 def is_rate_limit_error(error):
@@ -451,7 +540,7 @@ def extract_json_payload(raw_text):
     return json.loads(cleaned_text)
 
 
-def fetch_trend_radar_items(model_name):
+def fetch_trend_radar_items():
     fallback_items = [
         {
             "baslik": "Yapay Zeka ile Günlük Verimlilik Challenge",
@@ -578,7 +667,11 @@ def fetch_trend_radar_items(model_name):
     """
 
     try:
-        model = genai.GenerativeModel(model_name)
+        _api_anahtarlari = [st.secrets["GEMINI_API_KEY_1"], st.secrets["GEMINI_API_KEY_2"]]
+        _secilen_key = _api_anahtarlari[st.session_state.api_sayaci % 2]
+        st.session_state.api_sayaci += 1
+        genai.configure(api_key=_secilen_key)
+        model = genai.GenerativeModel(GEMINI_MODEL_ADI)
         response = model.generate_content(trend_prompt)
         response_text = getattr(response, "text", "") or ""
         parsed_items = extract_json_payload(response_text)
@@ -609,10 +702,6 @@ def fetch_trend_radar_items(model_name):
 
     except Exception:
         return fallback_items[:15]
-
-
-def sync_saved_api_key_from_widget():
-    st.session_state.saved_api_key = st.session_state.get("api_input_widget", "").strip()
 
 
 def send_to_studio(topic):
@@ -652,8 +741,6 @@ VIRAL_STRATEJI_OPTIONS = [
 
 
 def reset_app_state():
-    st.session_state.saved_api_key = ""
-    st.session_state.api_input_widget = ""
     st.session_state.history = []
     st.session_state.platform = PLATFORM_OPTIONS[0]
     _, default_duration_options = get_duration_field_config(st.session_state.platform)
@@ -672,11 +759,9 @@ st.set_page_config(page_title="Viral Sosyal Medya Stratejisti", layout="wide")
 apply_mobile_first_styles()
 
 
-# Session State ile API Key ve ayarları yönetme
-if "saved_api_key" not in st.session_state:
-    st.session_state.saved_api_key = st.session_state.get("api_key", "")
-if "api_input_widget" not in st.session_state:
-    st.session_state.api_input_widget = st.session_state.saved_api_key
+# Session State başlatma
+if "api_sayaci" not in st.session_state:
+    st.session_state.api_sayaci = 0
 if "history" not in st.session_state:
     st.session_state.history = []
 if "platform" not in st.session_state:
@@ -706,40 +791,12 @@ if "kalici_format" not in st.session_state:
 st.sidebar.title("🚀 AI Tabanlı İçerik Stüdyosu")
 page = st.sidebar.radio(
     "Araçlar ve Ayarlar",
-    ["✨ İçerik Stüdyosu", "🔥 Trend Radarı", "⚙️ Ayarlar", "📚 Geçmiş"],
+    ["✨ İçerik Stüdyosu", "🔥 Trend Radarı", "⚙️ Ayarlar", "📚 Geçmiş", "📂 Arşivim"],
     key="page",
 )
 
 
-active_api_key = st.session_state.saved_api_key.strip()
-selected_model = None
-api_error_message = None
-model_warning_message = None
-
-if not active_api_key:
-    api_error_message = "Lütfen Ayarlar sayfasından Gemini API anahtarınızı girin."
-else:
-    try:
-        genai.configure(api_key=active_api_key)
-    except Exception:
-        api_error_message = "API Anahtarı geçersiz veya bağlantı hatası. Lütfen tekrar deneyin."
-    else:
-        try:
-            available_models = genai.list_models()
-
-            for model in available_models:
-                if "gemini" in model.name and "generateContent" in model.supported_generation_methods:
-                    selected_model = model.name
-                    break
-
-            if not selected_model:
-                selected_model = "gemini-pro"
-
-        except Exception:
-            model_warning_message = "Modeller listelenirken bir hata oluştu. Varsayılan model kullanılacak."
-            selected_model = "gemini-pro"
-
-api_ready = bool(active_api_key and not api_error_message and selected_model)
+api_ready = True  # Anahtarlar Streamlit Secrets'ta (GEMINI_API_KEY_1 / GEMINI_API_KEY_2)
 # Kalıcı gölge değişkenlerden oku — widget unmount'tan bağımsız
 platform = st.session_state["kalici_platform"]
 hedef_kitle = st.session_state.get("hedef_kitle", HEDEF_KITLE_OPTIONS[0])
@@ -755,7 +812,7 @@ if sure_uzunluk not in _gecerli_sure_secenekleri:
 
 if page == "⚙️ Ayarlar":
     st.title("⚙️ Ayarlar")
-    st.caption("Platform, strateji ve API yapılandırmasını buradan yönetebilirsiniz.")
+    st.caption("Platform, strateji ve içerik tercihlerini buradan yönetebilirsiniz.")
 
     col_left, col_right = st.columns(2)
 
@@ -774,29 +831,6 @@ if page == "⚙️ Ayarlar":
     with col_right:
         st.selectbox("🎭 İçerik Tonu", ICERIK_TONU_OPTIONS, key="icerik_tonu")
         st.selectbox("🌟 Viral Strateji", VIRAL_STRATEJI_OPTIONS, key="viral_strateji")
-
-    st.divider()
-    st.subheader("🔑 Kendi Gemini API Anahtarınız (İsteğe Bağlı)")
-    st.caption("Kotalara takılmadan sınırsız kullanım için kendi anahtarınızı girebilirsiniz.")
-    st.text_input(
-        "Gemini API Anahtarı",
-        type="password",
-        key="api_input_widget",
-        on_change=sync_saved_api_key_from_widget,
-    )
-
-    if api_ready:
-        if st.session_state.saved_api_key.strip():
-            st.success("Kendi API anahtarınız aktif.")
-        else:
-            st.info("Sistem varsayılan API anahtarı aktif.")
-    elif active_api_key:
-        st.error(api_error_message)
-    else:
-        st.warning(api_error_message)
-
-    if model_warning_message:
-        st.warning(model_warning_message)
 
     st.divider()
     if st.button("Ayarları Sıfırla", use_container_width=True):
@@ -829,7 +863,7 @@ elif page == "✨ İçerik Stüdyosu":
 
     if st.button("🚀 Üret", type="primary", use_container_width=True):
         if not api_ready:
-            st.warning(api_error_message or "Üretim için önce Ayarlar sayfasından geçerli bir Gemini API anahtarı sağlayın.")
+            st.warning("API bağlantısı kurulamadı. Lütfen uygulama yöneticisiyle iletişime geçin.")
             st.stop()
 
         if not konu.strip():
@@ -1058,7 +1092,12 @@ Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
             }
 
-            model = genai.GenerativeModel(selected_model)
+            # Çift key rotasyon mimarisi — her üretimde sırayla farklı anahtar kullanılır
+            _api_anahtarlari = [st.secrets["GEMINI_API_KEY_1"], st.secrets["GEMINI_API_KEY_2"]]
+            _secilen_key = _api_anahtarlari[st.session_state.api_sayaci % 2]
+            st.session_state.api_sayaci += 1
+            genai.configure(api_key=_secilen_key)
+            model = genai.GenerativeModel(GEMINI_MODEL_ADI)
 
             st.divider()
             st.subheader("Üretilen İçerik Fikri")
@@ -1090,11 +1129,17 @@ Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
 
             if output:
                 st.toast("✅ İçeriğiniz başarıyla oluşturuldu!", icon="🎉")
-                render_output_details(
-                    output,
-                    download_key=f"current_output_download_{len(st.session_state.history) + 1}",
-                    show_main_content=False,
-                )
+                main_output_placeholder.empty()  # Akış placeholder’ını temizle, kart görünümüne geç
+                _dl_key = f"current_output_download_{len(st.session_state.history) + 1}"
+                render_slide_cards(output, download_key=_dl_key)
+                _kayit_sonucu = icerik_kaydet(platform, sure_uzunluk, konu, output)
+                if _kayit_sonucu is None:
+                    st.warning(
+                        "⚠️ İçerik üretildi ancak veritabanına kaydedilemedi — "
+                        "Arşiv tablosu henüz oluşturulmamış."
+                    )
+                elif _kayit_sonucu is False:
+                    st.warning("⚠️ İçerik üretildi ancak veritabanına kaydedilemedi.")
                 st.session_state.history.append(
                     {
                         "id": len(st.session_state.history) + 1,
@@ -1109,7 +1154,7 @@ Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
         except Exception as error:
             if is_rate_limit_error(error):
                 st.warning(
-                    "Şu anda çok fazla kişi içerik üretiyor ve sunucularımız limitlerine ulaştı. Lütfen 1 dakika sonra tekrar deneyin veya Ayarlar sayfasından kendi API anahtarınızı girerek sınırsızca kullanın."
+                    "Şu anda sunucularımız yoğun ve istek limitlerine ulaşıldı. Lütfen 1 dakika sonra tekrar deneyin."
                 )
             else:
                 st.error(f"Bir hata oluştu: {str(error)}")
@@ -1119,7 +1164,7 @@ elif page == "🔥 Trend Radarı":
     st.caption("Güncel trendleri tek bakışta inceleyin ve tek tıkla stüdyoya taşıyın.")
 
     if not api_ready:
-        st.warning(api_error_message or "Trend analizi için geçerli bir API anahtarı gerekiyor.")
+        st.warning("API bağlantısı kurulamadı. Lütfen uygulama yöneticisiyle iletişime geçin.")
     else:
         if not st.session_state.trend_radar_items:
             with st.status("🛰️ Trend sinyalleri toplanıyor...", expanded=True) as trend_status:
@@ -1130,12 +1175,12 @@ elif page == "🔥 Trend Radarı":
                 trend_status.write("🧠 Editöryal trend kartları oluşturuluyor...")
                 time.sleep(1)
 
-                st.session_state.trend_radar_items = fetch_trend_radar_items(selected_model)
+                st.session_state.trend_radar_items = fetch_trend_radar_items()
                 trend_status.update(label="✅ Trend raporu hazır!", state="complete", expanded=False)
 
         if st.button("🔄 Trendleri Yenile", use_container_width=True):
             with st.status("♻️ Trend listesi güncelleniyor...", expanded=False) as refresh_status:
-                st.session_state.trend_radar_items = fetch_trend_radar_items(selected_model)
+                st.session_state.trend_radar_items = fetch_trend_radar_items()
                 refresh_status.update(label="✅ Trendler güncellendi", state="complete", expanded=False)
 
         for index, trend in enumerate(st.session_state.trend_radar_items, start=1):
@@ -1176,9 +1221,74 @@ elif page == "📚 Geçmiş":
         for item in reversed(st.session_state.history):
             expander_title = f"📝 {item['konu']} · {item['platform']}"
             with st.expander(expander_title):
-                render_output_details(
+                render_slide_cards(
                     item["icerik"],
                     download_key=f"history_download_{item['id']}",
                 )
     else:
         st.info("Henüz bir içerik üretilmedi.")
+
+elif page == "📂 Arşivim":
+    st.title("📂 Arşivim")
+    st.caption("Buluta kaydedilen içeriklerinizi en yeni tarihe göre listeler.")
+
+    istemci = get_supabase_client()
+    if istemci is None:
+        st.warning(
+            "Arşiv özelliği aktif değil. Lütfen Streamlit Secrets'a "
+            "**SUPABASE_URL** ve **SUPABASE_KEY** ekleyin."
+        )
+    else:
+        _col_r, _ = st.columns([1, 4])
+        with _col_r:
+            if st.button("🔄 Yenile", use_container_width=True):
+                st.rerun()
+
+        _ARSIV_SQL = """
+CREATE TABLE public.icerik_arsivi (
+  id            bigserial PRIMARY KEY,
+  platform      text,
+  format        text,
+  konu          text,
+  icerik_metni  text,
+  tarih         timestamptz DEFAULT now()
+);
+"""
+        try:
+            _yanit = (
+                istemci.table("icerik_arsivi")
+                .select("*")
+                .order("tarih", desc=True)
+                .execute()
+            )
+            # Yanıtın kendisi bir hata içeriyorsa yakala
+            if hasattr(_yanit, "error") and _yanit.error:
+                raise RuntimeError(str(_yanit.error))
+            _kayitlar = _yanit.data if _yanit.data else []
+            # DEBUG: kaç kayıt geldiğini sidebar'ında göster
+            st.sidebar.info(f"🔍 Arşiv sorgusu: {len(_kayitlar)} kayıt döndü.")
+        except Exception as _e:
+            if _supabase_tablo_eksik_mi(_e):
+                st.info(
+                    "🛠️ **Arşiv tablonuz Supabase üzerinde henüz oluşturulmamış.**\n\n"
+                    "Supabase panelinden **SQL Editor** → **New query** sayfasına gidin "
+                    "ve aşağıdaki kodu çalıştırın:"
+                )
+                st.code(_ARSIV_SQL, language="sql")
+            else:
+                st.error(f"Arşiv yüklenirken beklenmedik bir hata oluştu: {str(_e)}")
+            _kayitlar = []
+
+        if not _kayitlar:
+            st.info("Henüz arşivlenmiş bir içerik bulunmuyor.")
+        else:
+            for _idx, _kayit in enumerate(_kayitlar):
+                _konu_etiket = (_kayit.get("konu") or "Konu belirtilmemiş")[:55]
+                _platform_etiket = _kayit.get("platform") or "?"
+                _tarih_etiket = (_kayit.get("tarih") or "")[:10]
+                _baslik = f"📝 {_konu_etiket} · {_platform_etiket} · {_tarih_etiket}"
+                with st.expander(_baslik):
+                    render_slide_cards(
+                        _kayit.get("icerik_metni") or "",
+                        download_key=f"arsiv_dl_{_idx}_{_tarih_etiket.replace('-', '')}",
+                    )

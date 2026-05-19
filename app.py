@@ -809,20 +809,76 @@ elif page == "✨ İçerik Stüdyosu":
             st.stop()
 
         prompt = f"""
-        Sen bir sosyal medya içerik stratejisti ve uzman bir metin yazarı olarak çalışıyorsun.
+        Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
         Tüm çıktıları Türkçe üret. Özellikle görsel ve video AI promptlarında asla İngilizce kullanma.
+
+        Kullanıcının seçtiği PLATFORM: [{platform}]
+        Kullanıcının seçtiği SÜRE / FORMAT TERCİHİ: [{sure_uzunluk}]
+
         Kullanıcı sana şu bilgileri verdi:
         - Konu: {konu}
-        - Platform: {platform}
-        - Süre/Uzunluk Tercihi: {sure_uzunluk}
         - Hedef Kitle: {hedef_kitle}
         - İçerik Tonu: {icerik_tonu}
         - Viral Strateji: {viral_strateji}
 
-        Kritik kurallar:
-        - Süre/Uzunluk tercihine göre içerik yoğunluğunu ayarla.
-        - Eğer tercih kısa ise daha az sahne ve daha kısa metin üret.
-        - Eğer tercih uzun ise daha detaylı anlatım, daha fazla sahne/bölüm ve daha kapsamlı içerik üret.
+        İçeriği KESİNLİKLE seçilen platform ve formatın dinamiklerine %100 uyacak şekilde hazırla.
+        Aşağıdaki kurallardan YALNIZCA seçilen platforma karşılık geleni uygula; diğerlerini yoksay.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ TİKTOK / INSTAGRAM REELS / YOUTUBE SHORTS seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - İlk 3 saniyede izleyiciyi ekrana kilitleyecek vurucu bir görsel/işitsel "Kanca (Hook)" oluştur.
+        - Saniye saniye akış ver: (0-3 sn: ...) → (3-8 sn: ...) → (8-30 sn: ...) vb.
+        - Ekranda yazacak metinleri (on-screen text) ve seslendirme (voiceover) metnini AYRI AYRI belirt.
+        - Enerjisi yüksek, hızlı geçişli ve izleyiciyi yeniden izlemeye (loop) teşvik eden bir kapanış tasarla.
+        - Süre tercihine göre (15-30 sn veya 30-60 sn) sahne sayısını ve akış hızını ayarla.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ INSTAGRAM HİKAYE (Story) seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - ASLA uzun metin yazma! 1-3 slaytlık kompakt bir akış ver.
+        - Her slayt için şunları ayrı ayrı belirt:
+          • Görsel fikri (ne gösterilecek)
+          • Eklenecek etkileşim çıkartması (Anket / Soru Kutusu / Link / Emoji Slider)
+          • Slayt üzerine yazılacak maksimum 1-2 cümlelik metin
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ YOUTUBE UZUN VİDEO seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - Dakika/saniye bazlı profesyonel bir senaryo iskeleti çıkar.
+        - Çarpıcı bir Giriş (Hook), konuyu derinlemesiyle işleyen ve timestamp içeren Gelişme bölümleri
+          ve güçlü bir "Abone Ol / Beğen" CTA'sı içeren Kapanış tasarla.
+        - Süre tercihine göre (3-5 dk / 5-10 dk / 10+ dk) bölüm sayısını ve detay düzeyini ayarla.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ LİNKEDIN seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - Profesyonel, değer katan ve hikaye anlatıcılığı (storytelling) barındıran bir dil kullan.
+        - Her paragraf arasında boş satır bırakarak okunabilirliği artır.
+        - Kurumsal ama samimi ol; merak uyandıran, güçlü bir açılış cümlesiyle başla.
+        - İçeriğin sonuna 3-5 adet sektörel hashtag ekle.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ TWITTER / X (Flood) seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - Her tweet için 280 karakter sınırına kesinlikle uy.
+        - Konu uzunsa "Thread / Flood" formatında ver; her tweeti (1/x), (2/x) şeklinde numaralandır.
+        - En vurucu, dikkat çekici cümleyi birinci tweete koy.
+        - Son tweete güçlü bir eylem çağrısı (CTA) veya konunun özeti ekle.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        ➤ INSTAGRAM POST / KAYDIRMALı (Carousel) seçildiyse:
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - Her slayt için ayrı görsel fikri ve metin ver (Slayt 1:, Slayt 2:... şeklinde sırala).
+        - Açıklama metnini (caption) okunabilir, dikkat çekici ve CTA içerecek şekilde yaz.
+        - İçeriğin sonuna 5-10 adet ilgili hashtag ekle.
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        GENEL KRİTİK KURALLAR (her platform için geçerli):
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        - Süre/uzunluk tercihine göre içerik yoğunluğunu ayarla.
+        - Kısa tercihte: daha az sahne, daha kısa metin, daha yüksek enerji.
+        - Uzun tercihte: daha detaylı anlatım, daha fazla bölüm, daha kapsamlı içerik.
         - Bölümleme ve kelime miktarı seçilen süre/uzunluk ile tutarlı olmalı.
 
         {get_algorithm_hacks_prompt(platform)}

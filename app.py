@@ -2,65 +2,12 @@ import html as _html_lib
 import json
 import re
 import time
-from datetime import datetime
 
 import google.generativeai as genai
 import streamlit as st
 from google.generativeai.types import HarmBlockThreshold, HarmCategory
-from supabase import create_client, Client
 
 GEMINI_MODEL_ADI = "gemini-3.1-flash-lite"
-
-
-@st.cache_resource
-def get_supabase_client():
-    """Supabase istemcisini Streamlit Secrets’tan oluşturur. Hata durumunda None döner."""
-    try:
-        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-    except Exception:
-        return None
-
-
-_TABLO_EKSIK_KODU = "PGRST205"
-
-
-def _supabase_tablo_eksik_mi(exc: Exception) -> bool:
-    """Hatanın tablo-bulunamadı (PGRST205) kaynaklı olup olmadığını döndürür."""
-    mesaj = str(exc)
-    return _TABLO_EKSIK_KODU in mesaj or "icerik_arsivi" in mesaj and "schema cache" in mesaj
-
-
-def icerik_kaydet(platform, format_, konu, icerik_metni):
-    """Üretilen içeriği Supabase icerik_arsivi tablosuna kaydeder.
-
-    Dönüş değerleri:
-        True   – başarıyla kaydedildi
-        False  – istemci yok veya genel hata
-        None   – tablo henüz oluşturulmamış (PGRST205)
-    """
-    istemci = get_supabase_client()
-    if istemci is None:
-        st.sidebar.error("DB Hatası: Supabase istemcisi oluşturulamadı. Secrets kontrol edin.")
-        return False
-    try:
-        _yanit = istemci.table("icerik_arsivi").insert({
-            "platform": platform,
-            "format": format_,
-            "konu": konu,
-            "icerik_metni": icerik_metni,
-            "tarih": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"),
-        }).execute()
-        # Supabase bazı durumlarda hata detayını exception yerine yanıtın içinde döndürür
-        if hasattr(_yanit, "error") and _yanit.error:
-            st.sidebar.error(f"DB Hatası (yanıt): {_yanit.error}")
-            return False
-        return True
-    except Exception as _exc:
-        if _supabase_tablo_eksik_mi(_exc):
-            return None  # Tablo yok — çağıran uyarı gösterebilir
-        # DEBUG: hata detayını sidebar'ında göster
-        st.sidebar.error(f"DB Hatası: {type(_exc).__name__}: {_exc}")
-        return False
 
 
 def gemini_stream_chunks(response_stream):
@@ -791,7 +738,7 @@ if "kalici_format" not in st.session_state:
 st.sidebar.title("🚀 AI Tabanlı İçerik Stüdyosu")
 page = st.sidebar.radio(
     "Araçlar ve Ayarlar",
-    ["✨ İçerik Stüdyosu", "🔥 Trend Radarı", "⚙️ Ayarlar", "📚 Geçmiş", "📂 Arşivim"],
+    ["✨ İçerik Stüdyosu", "🔥 Trend Radarı", "⚙️ Ayarlar", "📚 Geçmiş"],
     key="page",
 )
 
@@ -1132,14 +1079,6 @@ Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
                 main_output_placeholder.empty()  # Akış placeholder’ını temizle, kart görünümüne geç
                 _dl_key = f"current_output_download_{len(st.session_state.history) + 1}"
                 render_slide_cards(output, download_key=_dl_key)
-                _kayit_sonucu = icerik_kaydet(platform, sure_uzunluk, konu, output)
-                if _kayit_sonucu is None:
-                    st.warning(
-                        "⚠️ İçerik üretildi ancak veritabanına kaydedilemedi — "
-                        "Arşiv tablosu henüz oluşturulmamış."
-                    )
-                elif _kayit_sonucu is False:
-                    st.warning("⚠️ İçerik üretildi ancak veritabanına kaydedilemedi.")
                 st.session_state.history.append(
                     {
                         "id": len(st.session_state.history) + 1,
@@ -1227,68 +1166,3 @@ elif page == "📚 Geçmiş":
                 )
     else:
         st.info("Henüz bir içerik üretilmedi.")
-
-elif page == "📂 Arşivim":
-    st.title("📂 Arşivim")
-    st.caption("Buluta kaydedilen içeriklerinizi en yeni tarihe göre listeler.")
-
-    istemci = get_supabase_client()
-    if istemci is None:
-        st.warning(
-            "Arşiv özelliği aktif değil. Lütfen Streamlit Secrets'a "
-            "**SUPABASE_URL** ve **SUPABASE_KEY** ekleyin."
-        )
-    else:
-        _col_r, _ = st.columns([1, 4])
-        with _col_r:
-            if st.button("🔄 Yenile", use_container_width=True):
-                st.rerun()
-
-        _ARSIV_SQL = """
-CREATE TABLE public.icerik_arsivi (
-  id            bigserial PRIMARY KEY,
-  platform      text,
-  format        text,
-  konu          text,
-  icerik_metni  text,
-  tarih         timestamptz DEFAULT now()
-);
-"""
-        try:
-            _yanit = (
-                istemci.table("icerik_arsivi")
-                .select("*")
-                .order("tarih", desc=True)
-                .execute()
-            )
-            # Yanıtın kendisi bir hata içeriyorsa yakala
-            if hasattr(_yanit, "error") and _yanit.error:
-                raise RuntimeError(str(_yanit.error))
-            _kayitlar = _yanit.data if _yanit.data else []
-            # DEBUG: kaç kayıt geldiğini sidebar'ında göster
-            st.sidebar.info(f"🔍 Arşiv sorgusu: {len(_kayitlar)} kayıt döndü.")
-        except Exception as _e:
-            if _supabase_tablo_eksik_mi(_e):
-                st.info(
-                    "🛠️ **Arşiv tablonuz Supabase üzerinde henüz oluşturulmamış.**\n\n"
-                    "Supabase panelinden **SQL Editor** → **New query** sayfasına gidin "
-                    "ve aşağıdaki kodu çalıştırın:"
-                )
-                st.code(_ARSIV_SQL, language="sql")
-            else:
-                st.error(f"Arşiv yüklenirken beklenmedik bir hata oluştu: {str(_e)}")
-            _kayitlar = []
-
-        if not _kayitlar:
-            st.info("Henüz arşivlenmiş bir içerik bulunmuyor.")
-        else:
-            for _idx, _kayit in enumerate(_kayitlar):
-                _konu_etiket = (_kayit.get("konu") or "Konu belirtilmemiş")[:55]
-                _platform_etiket = _kayit.get("platform") or "?"
-                _tarih_etiket = (_kayit.get("tarih") or "")[:10]
-                _baslik = f"📝 {_konu_etiket} · {_platform_etiket} · {_tarih_etiket}"
-                with st.expander(_baslik):
-                    render_slide_cards(
-                        _kayit.get("icerik_metni") or "",
-                        download_key=f"arsiv_dl_{_idx}_{_tarih_etiket.replace('-', '')}",
-                    )

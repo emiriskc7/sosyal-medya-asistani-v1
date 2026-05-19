@@ -808,82 +808,94 @@ elif page == "✨ İçerik Stüdyosu":
             st.warning("Lütfen bir konu girin.")
             st.stop()
 
+        platform_lower = platform.lower()
+
+        if any(k in platform_lower for k in ("tiktok", "reels", "shorts")):
+            platform_kurali = (
+                "KISA VİDEO (TikTok/Reels/Shorts) KURALI — KESİNLİKLE UYGULA:\n"
+                "- İlk 3 saniyede izleyiciyi kilitleyen bir Hook/Kanca yaz.\n"
+                "- Saniye saniye akış ver: (0-3 sn: ...) → (3-8 sn: ...) → (8-30 sn: ...) vb.\n"
+                "- Ekran metni (on-screen text) ile seslendirme (voiceover) metnini AYRI AYRI belirt.\n"
+                "- Loop hissi yaratacak, enerjisi yüksek bir kapanış tasarla.\n"
+                "- Uzun paragraf ve akademik anlatım KESİNLİKLE YASAKTIR."
+            )
+        elif any(k in platform_lower for k in ("hikaye", "story")):
+            platform_kurali = (
+                "INSTAGRAM HİKAYE (Story) KURALI — KESİNLİKLE UYGULA:\n"
+                "- ASLA uzun metin yazma! Maksimum 1-3 slaytlık kompakt akış ver.\n"
+                "- Her slayt için AYRI AYRI belirt:\n"
+                "  1. Görsel fikri (ne gösterilecek)\n"
+                "  2. Etkileşim çıkartması: Anket / Soru Kutusu / Link / Emoji Slider\n"
+                "  3. Slayt üzerine yazılacak maksimum 2 cümle\n"
+                "- Detaylı paragraf ve uzun metin KESİNLİKLE YASAKTIR."
+            )
+        elif "youtube" in platform_lower and "uzun" in platform_lower:
+            platform_kurali = (
+                f"YOUTUBE UZUN VİDEO KURALI — KESİNLİKLE UYGULA (Süre: {sure_uzunluk}):\n"
+                "- Dakika/saniye bazlı profesyonel senaryo iskeleti çıkar.\n"
+                "- Yapı: Hook (Giriş) → Timestamp'li Ana Bölümler → CTA Kapanış.\n"
+                f"- Süre tercihi '{sure_uzunluk}' olduğu için bölüm sayısını ve detay düzeyini buna göre ayarla.\n"
+                "- Her bölüm için zaman damgası (00:00, 02:30 vb.) ekle."
+            )
+        elif "linkedin" in platform_lower:
+            platform_kurali = (
+                "LİNKEDIN KURALI — KESİNLİKLE UYGULA:\n"
+                "- Storytelling (hikaye anlatıcılığı) tekniğini kullan.\n"
+                "- Her paragraf arasına MUTLAKA boş satır bırak (okunabilirlik için).\n"
+                "- Profesyonel ama samimi bir dil; ilk cümle merak uyandırıcı olsun.\n"
+                "- Metnin sonuna 3-5 adet sektörel hashtag ekle.\n"
+                "- Kuru, listeli veya madde madde format KESİNLİKLE YASAKTIR."
+            )
+        elif any(k in platform_lower for k in ("twitter", "/x", "flood")):
+            platform_kurali = (
+                "TWITTER/X THREAD KURALI — KESİNLİKLE UYGULA:\n"
+                "- Her tweet için 280 karakter sınırına KESİNLİKLE uy.\n"
+                "- Thread/Flood formatında ver; her tweeti (1/x), (2/x) şeklinde numaralandır.\n"
+                "- En çarpıcı, dikkat çekici cümleyi birinci tweete koy.\n"
+                "- Son tweete güçlü bir CTA (eylem çağrısı) veya özet ekle.\n"
+                "- 280 karakteri aşan tek tweet üretmek KESİNLİKLE YASAKTIR."
+            )
+        elif any(k in platform_lower for k in ("kaydırmalı", "carousel", "post")):
+            platform_kurali = (
+                "INSTAGRAM CAROUSEL/POST KURALI — KESİNLİKLE UYGULA:\n"
+                "- Slayt slayt içerik ver: Slayt 1:, Slayt 2:, ... şeklinde numaralandır.\n"
+                "- Her slayt için görsel fikri ve üzerindeki metin ayrı ayrı belirtilmeli.\n"
+                "- Caption (açıklama metni) CTA içerecek şekilde ayrıca yaz.\n"
+                "- Metnin sonuna 5-10 ilgili hashtag ekle."
+            )
+        else:
+            platform_kurali = (
+                f"'{platform}' PLATFORMA ÖZEL KURAL — KESİNLİKLE UYGULA:\n"
+                "- Seçilen platformun tüketim alışkanlıklarına ve algoritma dinamiklerine uygun içerik üret.\n"
+                "- Yüksek etkileşim ve kaydetme/paylaşma oranı hedefle."
+            )
+
         prompt = f"""
-        Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
-        Tüm çıktıları Türkçe üret. Özellikle görsel ve video AI promptlarında asla İngilizce kullanma.
+⚠️⚠️ ZORUNLU PLATFORM TALİMATLARI — BU KURALLARA %100 İTAAT ETMELİSİN ⚠️⚠️
 
-        Kullanıcının seçtiği PLATFORM: [{platform}]
-        Kullanıcının seçtiği SÜRE / FORMAT TERCİHİ: [{sure_uzunluk}]
+KULLANICININ SEÇTİĞİ PLATFORM : {platform}
+KULLANICININ SEÇTİĞİ SÜRE/FORMAT: {sure_uzunluk}
 
-        Kullanıcı sana şu bilgileri verdi:
-        - Konu: {konu}
-        - Hedef Kitle: {hedef_kitle}
-        - İçerik Tonu: {icerik_tonu}
-        - Viral Strateji: {viral_strateji}
+{platform_kurali}
 
-        İçeriği KESİNLİKLE seçilen platform ve formatın dinamiklerine %100 uyacak şekilde hazırla.
-        Aşağıdaki kurallardan YALNIZCA seçilen platforma karşılık geleni uygula; diğerlerini yoksay.
+UYARI: Yukarıdaki kurallara aykırı hiçbir format veya yapı KULLANAMAZSIN.
+Seçilen platform için geçerli olmayan çıktı biçimleri KESİNLİKLE YASAKTIR.
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ TİKTOK / INSTAGRAM REELS / YOUTUBE SHORTS seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - İlk 3 saniyede izleyiciyi ekrana kilitleyecek vurucu bir görsel/işitsel "Kanca (Hook)" oluştur.
-        - Saniye saniye akış ver: (0-3 sn: ...) → (3-8 sn: ...) → (8-30 sn: ...) vb.
-        - Ekranda yazacak metinleri (on-screen text) ve seslendirme (voiceover) metnini AYRI AYRI belirt.
-        - Enerjisi yüksek, hızlı geçişli ve izleyiciyi yeniden izlemeye (loop) teşvik eden bir kapanış tasarla.
-        - Süre tercihine göre (15-30 sn veya 30-60 sn) sahne sayısını ve akış hızını ayarla.
+══════════════════════════════════════════
+İÇERİK BİLGİLERİ
+══════════════════════════════════════════
+Konu         : {konu}
+Hedef Kitle  : {hedef_kitle}
+İçerik Tonu  : {icerik_tonu}
+Viral Strateji: {viral_strateji}
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ INSTAGRAM HİKAYE (Story) seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - ASLA uzun metin yazma! 1-3 slaytlık kompakt bir akış ver.
-        - Her slayt için şunları ayrı ayrı belirt:
-          • Görsel fikri (ne gösterilecek)
-          • Eklenecek etkileşim çıkartması (Anket / Soru Kutusu / Link / Emoji Slider)
-          • Slayt üzerine yazılacak maksimum 1-2 cümlelik metin
+Tüm çıktıları Türkçe üret.
+Görsel ve video AI promptlarında asla İngilizce kullanma.
+Sen üst düzey bir Sosyal Medya ve Algoritma Uzmanısın.
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ YOUTUBE UZUN VİDEO seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - Dakika/saniye bazlı profesyonel bir senaryo iskeleti çıkar.
-        - Çarpıcı bir Giriş (Hook), konuyu derinlemesiyle işleyen ve timestamp içeren Gelişme bölümleri
-          ve güçlü bir "Abone Ol / Beğen" CTA'sı içeren Kapanış tasarla.
-        - Süre tercihine göre (3-5 dk / 5-10 dk / 10+ dk) bölüm sayısını ve detay düzeyini ayarla.
+{get_algorithm_hacks_prompt(platform)}
 
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ LİNKEDIN seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - Profesyonel, değer katan ve hikaye anlatıcılığı (storytelling) barındıran bir dil kullan.
-        - Her paragraf arasında boş satır bırakarak okunabilirliği artır.
-        - Kurumsal ama samimi ol; merak uyandıran, güçlü bir açılış cümlesiyle başla.
-        - İçeriğin sonuna 3-5 adet sektörel hashtag ekle.
-
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ TWITTER / X (Flood) seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - Her tweet için 280 karakter sınırına kesinlikle uy.
-        - Konu uzunsa "Thread / Flood" formatında ver; her tweeti (1/x), (2/x) şeklinde numaralandır.
-        - En vurucu, dikkat çekici cümleyi birinci tweete koy.
-        - Son tweete güçlü bir eylem çağrısı (CTA) veya konunun özeti ekle.
-
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        ➤ INSTAGRAM POST / KAYDIRMALı (Carousel) seçildiyse:
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - Her slayt için ayrı görsel fikri ve metin ver (Slayt 1:, Slayt 2:... şeklinde sırala).
-        - Açıklama metnini (caption) okunabilir, dikkat çekici ve CTA içerecek şekilde yaz.
-        - İçeriğin sonuna 5-10 adet ilgili hashtag ekle.
-
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        GENEL KRİTİK KURALLAR (her platform için geçerli):
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        - Süre/uzunluk tercihine göre içerik yoğunluğunu ayarla.
-        - Kısa tercihte: daha az sahne, daha kısa metin, daha yüksek enerji.
-        - Uzun tercihte: daha detaylı anlatım, daha fazla bölüm, daha kapsamlı içerik.
-        - Bölümleme ve kelime miktarı seçilen süre/uzunluk ile tutarlı olmalı.
-
-        {get_algorithm_hacks_prompt(platform)}
-
-        {get_platform_specific_prompt(platform)}
+{get_platform_specific_prompt(platform)}
         """
 
         try:
